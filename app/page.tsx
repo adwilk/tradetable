@@ -116,7 +116,12 @@ function TradeTable({ user, onSignOut }: { user: User; onSignOut: () => Promise<
         nights = data || [];
       }
       if (!nights.length) {
-        const { data, error } = await client.from("trade_nights").insert({ name: "My trade night", location: "" }).select().single();
+        const { data, error } = await client.rpc("create_trade_night", {
+          p_name: "My trade night",
+          p_event_date: null,
+          p_event_time: null,
+          p_location: "",
+        }).single();
         if (error) { setDbError(error.message); setDataReady(true); return; }
         nights = [data];
       }
@@ -328,7 +333,12 @@ function TradeTable({ user, onSignOut }: { user: User; onSignOut: () => Promise<
     if (!supabase) return;
     const payload = { name: eventDraft.name.trim() || "My trade night", event_date: eventDraft.date || null, event_time: eventDraft.time || null, location: eventDraft.location.trim() };
     const query = creatingNight || !eventId
-      ? supabase.from("trade_nights").insert(payload).select().single()
+      ? supabase.rpc("create_trade_night", {
+          p_name: payload.name,
+          p_event_date: payload.event_date,
+          p_event_time: payload.event_time,
+          p_location: payload.location,
+        }).single()
       : supabase.from("trade_nights").update(payload).eq("id", eventId).select().single();
     const { data, error } = await query;
     if (error || !data) { setDbError(error?.message || "Could not save the trade night."); return; }
