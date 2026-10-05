@@ -45,4 +45,7 @@
 .attendee{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:9px;color:#67665e;white-space:nowrap}
 .attendee:first-child{margin-left:0}
 .attendee .avatar{margin-left:0}
-.attendee-name{max-width:90px;overflow:hidden;text-overflow:ellipsis}
+.attendee{position:relative}
+.attendee-name{display:none}
+.attendee::after{content:attr(title);position:absolute;z-index:8;left:50%;bottom:calc(100% + 7px);transform:translate(-50%,3px);padding:5px 8px;border-radius:4px;background:#24213b;color:#fff;font:500 10px var(--sans);white-space:nowrap;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .12s ease,transform .12s ease,visibility .12s}
+.attendee:hover::after{opacity:1;visibility:visible;transform:translate(-50%,0)}
