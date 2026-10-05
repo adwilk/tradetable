@@ -6,7 +6,7 @@ import { Query, tcgdex, type TCGdexPriceableCard } from "./lib/tcgdex";
 import { supabase } from "./lib/supabase";
 import { getOAuthReturnUrl } from "./lib/auth";
 
-type Card = { id?: string; recordId?: string; ownerId?: string; hasToTrade?: boolean; name: string; set: string; number: string; rarity: string; price?: number | null; priceUnit?: "EUR" | "GBP"; marketEur?: number | null; image?: string; dataLoaded?: boolean; color: string; owners: string[]; wanted: number; };
+type Card = { id?: string; recordId?: string; ownerId?: string; hasToTrade?: boolean; name: string; set: string; number: string; rarity: string; price?: number | null; priceUnit?: "EUR" | "GBP"; marketEur?: number | null; image?: string; dataLoaded?: boolean; color: string; owners: string[]; wants: string[]; has: string[]; wanted: number; };
 type SetOption = { id: string; name: string; logo?: string; cardCount: { total: number; official: number }; releaseDate?: string; };
 type EventData = { name: string; date: string; time: string; location: string; };
 type LocationSuggestion = { place_id: number; display_name: string };
@@ -192,6 +192,7 @@ function TradeTable({ user, onSignOut }: { user: User; onSignOut: () => Promise<
         recordId: row.id, ownerId: row.owner_id, id: row.tcgdex_id || undefined, name: row.name,
         set: row.set_name || "Pokémon TCG", number: row.card_number || "", rarity: row.rarity || "Pokémon card",
         image: row.image_url || undefined, color: row.color || colorForCard(row.name), owners: [row.owner_id === user.id ? "You" : `M${ids.indexOf(row.owner_id) + 1}`],
+        wants: row.has_to_trade ? [] : [row.owner_id === user.id ? "You" : `M${ids.indexOf(row.owner_id) + 1}`], has: row.has_to_trade ? [row.owner_id === user.id ? "You" : `M${ids.indexOf(row.owner_id) + 1}`] : [],
         wanted: row.wanted || 1, hasToTrade: row.has_to_trade, dataLoaded: false,
       })));
       setDbError(""); setDataReady(true);
@@ -338,9 +339,11 @@ function TradeTable({ user, onSignOut }: { user: User; onSignOut: () => Promise<
     for (const card of filtered) {
       const key = card.id || `${card.name.toLowerCase()}|${card.set.toLowerCase()}|${card.number}`;
       const existing = grouped.get(key);
-      if (!existing) grouped.set(key, { ...card, wanted: card.hasToTrade ? 0 : card.wanted, owners: [...card.owners] });
+      if (!existing) grouped.set(key, { ...card, wanted: card.hasToTrade ? 0 : card.wanted, owners: [...card.owners], wants: [...card.wants], has: [...card.has] });
       else {
         existing.owners = [...new Set([...existing.owners, ...card.owners])];
+        existing.wants = [...new Set([...existing.wants, ...card.wants])];
+        existing.has = [...new Set([...existing.has, ...card.has])];
         if (!card.hasToTrade) existing.wanted += card.wanted;
         existing.hasToTrade = existing.hasToTrade || card.hasToTrade;
         if (!existing.image && card.image) existing.image = card.image;
@@ -365,7 +368,7 @@ function TradeTable({ user, onSignOut }: { user: User; onSignOut: () => Promise<
       const selected = (full || summary) as TCGdexPriceableCard;
       const selectedSet = sets.find((set) => set.id === summary.id.slice(0, summary.id.lastIndexOf("-")));
       if (myCards.some((item) => item.id === summary.id)) { flash("That card is already on your list."); return; }
-      const card = applyTCGdexDetails({ color: colorForCard(summary.name), owners: ["You"], ownerId: user.id, wanted: 1, set: selectedSet?.name }, selected, gbpRate);
+      const card = applyTCGdexDetails({ color: colorForCard(summary.name), owners: ["You"], wants: ["You"], has: [], ownerId: user.id, wanted: 1, set: selectedSet?.name }, selected, gbpRate);
       if (!full) card.set = selectedSet?.name || "Pokémon TCG";
       const stored = await saveCardRow(card);
       if (!stored) return;
@@ -382,7 +385,7 @@ function TradeTable({ user, onSignOut }: { user: User; onSignOut: () => Promise<
     }
     const ownCard = myCards.find((item) => item.id === card.id);
     if (!ownCard) {
-      const available = { ...card, recordId: undefined, ownerId: user.id, owners: ["You"], hasToTrade: true };
+      const available = { ...card, recordId: undefined, ownerId: user.id, owners: ["You"], wants: [], has: ["You"], hasToTrade: true };
       const stored = await saveCardRow(available, { has_to_trade: true });
       if (!stored) return;
       setCards((current) => [{ ...available, recordId: stored.id }, ...current]);
@@ -481,10 +484,10 @@ function TradeTable({ user, onSignOut }: { user: User; onSignOut: () => Promise<
         <div className="section-heading"><div><div className="micro-label">WANTED CARDS</div><h2>Cards people <em>want.</em></h2></div><div className="section-actions"><button className="button-light bring-button" disabled={!eventId || !dataReady} onClick={() => setModal("bring")}>Cards to bring <span>{bringCards.length}</span></button><button className="add-wish" disabled={!eventId || !dataReady} onClick={() => setModal("card")}><Icon name="plus" size={17}/> Add to my list</button></div></div>
         <div className="toolbar"><div className="filter-tabs"><button className={filter === "Everyone" ? "filter active" : "filter"} onClick={() => setFilter("Everyone")}>Everyone <span>{cards.length}</span></button>{people.slice(0, 3).map((person) => <button key={person.id} className={filter === person.name ? "filter active" : "filter"} onClick={() => setFilter(person.name)}>{person.name}</button>)}</div><div className="toolbar-tools"><label className="search-box"><Icon name="search" size={17}/><input aria-label="Search cards" placeholder="Find a card or set..." value={search} onChange={(e) => setSearch(e.target.value)}/><kbd>⌘ K</kbd></label><div className="view-switch" role="group" aria-label="Card list view"><button type="button" className={cardView === "grid" ? "active" : ""} aria-pressed={cardView === "grid"} onClick={() => setCardView("grid")}>Grid</button><button type="button" className={cardView === "table" ? "active" : ""} aria-pressed={cardView === "table"} onClick={() => setCardView("table")}>Table</button></div></div></div>
         <div className={cardView === "table" ? "cards-table-wrap" : "cards-grid"}>{visibleCards.length ? cardView === "table" ? <table className="cards-table"><thead><tr><th>Card</th><th>Set</th><th>No.</th><th>Wanted</th><th>Market</th><th>On list</th><th></th></tr></thead><tbody>{visibleCards.map((card) => { const ownListing = myCards.find((item) => item.id === card.id); const isOwnCard = Boolean(ownListing); const ownerNames = card.owners.map((owner) => owner === "You" ? profileName : people.find((person) => person.initials === owner)?.name || owner).join(", "); return <tr key={card.id || card.name}><td className="table-card-name">{card.image && <img src={card.image} alt="" loading="lazy"/>}<span><strong>{card.name}</strong><small>{card.rarity}</small></span></td><td>{card.set}</td><td>{card.number || "—"}</td><td>{card.wanted}</td><td>{formatMarketPrice(card)} {card.priceUnit || ""}</td><td>{ownerNames || "—"}</td><td><button aria-label={isOwnCard ? (ownListing?.hasToTrade ? `I don’t have ${card.name}` : `Remove ${card.name} from your list`) : `I have ${card.name}`} className={isOwnCard ? "have-button selected" : "have-button"} onClick={() => isOwnCard && ownListing ? void removeOwnCard(ownListing) : void toggleAvailable(card)}>{isOwnCard ? (ownListing?.hasToTrade ? "I don’t have this" : "Remove") : "I have this"}</button></td></tr>; })}</tbody></table> : visibleCards.map((card, index) => {
-          const owns = card.owners;
+          const renderPeople = (ids: string[]) => ids.slice(0, 3).map((owner) => { const person = people.find((p) => p.initials === owner); const ownerName = owner === "You" ? profileName : person?.name || owner; const ownerAvatar = owner === "You" ? profileAvatar : person?.avatar; return <span key={owner} className="owner-avatar-tip" data-owner-name={ownerName} aria-label={ownerName}>{ownerAvatar ? <img className={`avatar avatar-${person?.color || "you"} profile-avatar-image`} src={ownerAvatar} alt="" referrerPolicy="no-referrer"/> : <span className={`avatar avatar-${person?.color || "you"}`}>{owner === "You" ? profileName.trim().charAt(0).toUpperCase() : owner}</span>}<span className="owner-name">{ownerName}</span></span>; });
           const ownListing = myCards.find((item) => item.id === card.id);
           const isOwnCard = Boolean(ownListing);
-          return <article className={`want-card ${card.color}`} key={card.id || card.name} style={{ animationDelay: `${index * 60}ms` }}><div className="card-topline"><span className="set-chip">{card.set}</span></div><div className="card-illustration">{card.image ? <img className="tcg-card-image" src={card.image} alt={`${card.name} card`} loading="lazy"/> : <><div className="illustration-glow"/><span className="pokemon-emoji">✨</span><span className="illustration-star star-a">✦</span><span className="illustration-star star-b">✧</span><span className="illustration-orbit"/></>}</div><div className="card-details"><div className="rarity-line">{card.rarity} <span>·</span> {card.number}</div><h3>{card.name}</h3><div className="card-bottom"><div className="want-count"><strong>{card.wanted}</strong><span>wanted</span></div><span className="market-price">{formatMarketPrice(card)}<small> {card.priceUnit === "GBP" ? "UK est." : card.priceUnit === "EUR" ? "Cardmarket" : "market"}</small></span></div></div><div className="card-footer"><div className="owner-avatars">{owns.slice(0, 4).map((owner) => { const person = people.find((p) => p.initials === owner); const ownerName = owner === "You" ? profileName : person?.name || owner; return <span key={owner} className="owner-avatar-tip" data-owner-name={ownerName}>{profileAvatar && owner === "You" ? <img className="avatar avatar-you profile-avatar-image" src={profileAvatar} alt="" referrerPolicy="no-referrer"/> : <span className={`avatar avatar-${person?.color || "you"}`}>{owner === "You" ? profileName.trim().charAt(0).toUpperCase() : owner}</span>}</span>; })}{owns.length > 4 && <span className="owner-overflow">+{owns.length - 4}</span>}<span className="have-label">{card.hasToTrade ? "Available" : owns.length ? (owns[0] === "You" ? "On your list" : "On member list") : "Be the first"}</span></div><button aria-label={isOwnCard ? (ownListing?.hasToTrade ? `I don’t have ${card.name}` : `Remove ${card.name} from your list`) : `I have ${card.name}`} className={isOwnCard ? "have-button selected" : "have-button"} onClick={() => isOwnCard && ownListing ? void removeOwnCard(ownListing) : void toggleAvailable(card)}>{isOwnCard ? (ownListing?.hasToTrade ? "I don’t have this" : "Remove") : "I have this"}</button></div></article>;
+          return <article className={`want-card ${card.color}`} key={card.id || card.name} style={{ animationDelay: `${index * 60}ms` }}><div className="card-topline"><span className="set-chip">{card.set}</span></div><div className="card-illustration">{card.image ? <img className="tcg-card-image" src={card.image} alt={`${card.name} card`} loading="lazy"/> : <><div className="illustration-glow"/><span className="pokemon-emoji">✨</span><span className="illustration-star star-a">✦</span><span className="illustration-star star-b">✧</span><span className="illustration-orbit"/></>}</div><div className="card-details"><div className="rarity-line">{card.rarity} <span>·</span> {card.number}</div><h3>{card.name}</h3><div className="card-bottom"><div className="want-count"><strong>{card.wanted}</strong><span>wanted</span></div><span className="market-price">{formatMarketPrice(card)}<small> {card.priceUnit === "GBP" ? "UK est." : card.priceUnit === "EUR" ? "Cardmarket" : "market"}</small></span></div></div><div className="card-footer"><div className="card-people"><div className="card-people-row"><span className="people-label">Wants</span><div className="owner-avatars">{renderPeople(card.wants)}{card.wants.length > 3 && <span className="owner-overflow">+{card.wants.length - 3}</span>}{!card.wants.length && <span className="people-empty">—</span>}</div></div><div className="card-people-row"><span className="people-label">Has</span><div className="owner-avatars">{renderPeople(card.has)}{card.has.length > 3 && <span className="owner-overflow">+{card.has.length - 3}</span>}{!card.has.length && <span className="people-empty">—</span>}</div></div></div><button aria-label={isOwnCard ? (ownListing?.hasToTrade ? `I don’t have ${card.name}` : `Remove ${card.name} from your list`) : `I have ${card.name}`} className={isOwnCard ? "have-button selected" : "have-button"} onClick={() => isOwnCard && ownListing ? void removeOwnCard(ownListing) : void toggleAvailable(card)}>{isOwnCard ? (ownListing?.hasToTrade ? "I don’t have this" : "Remove") : "I have this"}</button></div></article>;
         }) : <div className="empty-state"><span>🔎</span><h3>No cards found</h3><p>Try another name, set, or person.</p><button onClick={() => { setSearch(""); setFilter("Everyone"); }}>Clear filters</button></div>}</div>
       <div className="list-note">{dataError} {dataReady ? "" : "Loading this trade night…"}</div>
       </section>
@@ -526,6 +529,8 @@ function applyTCGdexDetails(base: Partial<Card>, card: TCGdexPriceableCard, gbpR
     image: card.image?.startsWith("https://assets.tcgdex.net/") ? `${card.image}/low.webp` : undefined,
     color: base.color || colorForCard(card.name),
     owners: base.owners || [],
+    wants: base.wants || [],
+    has: base.has || [],
     wanted: base.wanted || 1,
     marketEur,
     price: marketEur === null ? null : gbpRate === null ? marketEur : marketEur * gbpRate,
