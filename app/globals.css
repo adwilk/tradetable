@@ -41,3 +41,8 @@
 .card-people .owner-name{font-size:8px;color:#67665e;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:4px}
 .card-people .owner-avatar-tip{margin-left:7px}
 .card-people .owner-avatar-tip:first-child{margin-left:0}
+.card-people .owner-avatar-tip{align-items:center}
+.attendee{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-size:9px;color:#67665e;white-space:nowrap}
+.attendee:first-child{margin-left:0}
+.attendee .avatar{margin-left:0}
+.attendee-name{max-width:90px;overflow:hidden;text-overflow:ellipsis}
