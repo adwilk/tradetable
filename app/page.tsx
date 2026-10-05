@@ -86,28 +86,37 @@ function TradeTable({ user, onSignOut }: { user: User; onSignOut: () => Promise<
   const [inviteUrl, setInviteUrl] = useState("");
 
   useEffect(() => {
-    if (!supabase) return;
+    const client = supabase;
+    if (!client) return;
     let alive = true;
     (async () => {
       setDbError("");
+      const { data: { user: authenticatedUser }, error: authError } = await client.auth.getUser();
+      if (!alive) return;
+      if (authError || !authenticatedUser || authenticatedUser.id !== user.id) {
+        setDbError("Your sign-in session could not be verified. Please sign out and sign in again.");
+        setDataReady(true);
+        return;
+      }
+
       const invite = new URLSearchParams(window.location.search).get("invite");
       if (invite) {
-        const { error } = await supabase.rpc("join_trade_night", { p_token: invite });
+        const { error } = await client.rpc("join_trade_night", { p_token: invite });
         if (error) setDbError(`Could not join this trade night: ${error.message}`);
         else window.history.replaceState({}, "", window.location.pathname);
       }
-      const { data: memberships, error: memberError } = await supabase.from("trade_night_members").select("trade_night_id").eq("user_id", user.id);
+      const { data: memberships, error: memberError } = await client.from("trade_night_members").select("trade_night_id").eq("user_id", authenticatedUser.id);
       if (!alive) return;
       if (memberError) { setDbError(memberError.message); setDataReady(true); return; }
       const ids = (memberships || []).map((row) => row.trade_night_id as string);
       let nights: any[] = [];
       if (ids.length) {
-        const { data, error } = await supabase.from("trade_nights").select("*").in("id", ids).order("created_at", { ascending: false });
+        const { data, error } = await client.from("trade_nights").select("*").in("id", ids).order("created_at", { ascending: false });
         if (error) { setDbError(error.message); setDataReady(true); return; }
         nights = data || [];
       }
       if (!nights.length) {
-        const { data, error } = await supabase.from("trade_nights").insert({ owner_id: user.id, name: "My trade night", location: "" }).select().single();
+        const { data, error } = await client.from("trade_nights").insert({ owner_id: authenticatedUser.id, name: "My trade night", location: "" }).select().single();
         if (error) { setDbError(error.message); setDataReady(true); return; }
         nights = [data];
       }
