@@ -21,3 +21,17 @@
 
 .toolbar-tools{display:flex;align-items:center;gap:10px}.view-switch{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:5px;background:#fff;flex:none}.view-switch button{border:0;border-radius:3px;padding:6px 9px;background:transparent;color:var(--muted);font-size:9px;font-weight:600}.view-switch button.active{background:#eee9ff;color:#6048d8}.cards-table-wrap{width:100%;overflow-x:auto;margin-top:13px;border:1px solid var(--line);border-radius:6px;background:#fff}.cards-table{width:100%;border-collapse:collapse;text-align:left;font-size:10px}.cards-table th{padding:11px 13px;background:#f7f5ff;color:#77738d;font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}.cards-table td{padding:10px 13px;border-top:1px solid #efedf5;color:#56536b;vertical-align:middle}.cards-table tbody tr:hover{background:#fcfbff}.table-card-name{min-width:185px;display:flex;align-items:center;gap:9px}.table-card-name img{width:28px;height:38px;object-fit:cover;border-radius:3px;box-shadow:0 1px 4px #24213b22}.table-card-name span{display:flex;flex-direction:column;gap:3px}.table-card-name strong{color:var(--ink);font-size:10px}.table-card-name small{color:var(--muted);font-size:8px}.cards-table td:nth-child(2){min-width:130px}.cards-table td:nth-child(6){min-width:90px}.cards-table .have-button{white-space:nowrap}
 @media(max-width:700px){.toolbar-tools{width:100%;justify-content:space-between}.toolbar-tools .search-box{flex:1;min-width:0}.view-switch{flex:none}.cards-table th,.cards-table td{padding:9px 10px}}
+
+@media(max-width:700px){
+  .avatar{width:36px;height:36px;font-size:11px}
+  .member .avatar{width:34px;height:34px;font-size:10px}
+  .owner-avatars .avatar{width:26px;height:26px;font-size:8px}
+  .attendee-more{width:35px;height:35px;font-size:11px}
+  .button-light,.button-dark{min-height:42px;height:42px;padding:0 14px;font-size:11px}
+  .add-wish{min-height:42px;height:42px;padding:0 12px;font-size:10px}
+  .invite-button{min-height:42px;padding:0 10px;font-size:11px}
+  .have-button{min-height:34px;height:34px;padding:0 9px;font-size:9px}
+  .filter{min-height:40px;padding:9px 11px;font-size:11px}
+  .view-switch button{min-height:34px;padding:7px 10px;font-size:10px}
+  .profile-button .avatar{width:36px;height:36px}
+}
