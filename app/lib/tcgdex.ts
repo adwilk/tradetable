@@ -21,6 +21,7 @@ export type TCGdexPriceableCard = {
   localId: string;
   image?: string;
   rarity?: string;
+  variants?: { firstEdition?: boolean; holo?: boolean; normal?: boolean; reverse?: boolean; wPromo?: boolean };
   set?: { id: string; name: string; logo?: string; cardCount?: { total: number; official: number } };
   pricing?: TCGdexMarketPricing;
   getImageURL(quality?: "low" | "high", extension?: "png" | "webp"): string;
