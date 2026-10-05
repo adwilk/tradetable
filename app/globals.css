@@ -38,7 +38,7 @@
 }
 .member-avatar-image{width:100%;height:100%;border-radius:50%;object-fit:cover}
 .card-footer{min-height:64px;gap:8px}.card-people{display:flex;flex-direction:column;gap:3px;min-width:0}.card-people-row{display:flex;align-items:center;gap:5px;min-height:21px}.people-label{width:31px;font-size:8px;font-weight:600;color:#77738d}.people-empty{font-size:9px;color:#bbb7c3}.card-people-row .owner-avatars .avatar{width:19px;height:19px;font-size:6px}
-.card-people .owner-name{font-size:8px;color:#67665e;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:4px}
+.card-people .owner-name{display:none}
 .card-people .owner-avatar-tip{margin-left:7px}
 .card-people .owner-avatar-tip:first-child{margin-left:0}
 .card-people .owner-avatar-tip{align-items:center}
